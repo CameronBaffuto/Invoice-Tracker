@@ -16,7 +16,7 @@ final class Item {
     var isPaid: Bool
     var amount: Double
 
-    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 0.0) {
+    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 30.0) {
         self.title = title
         self.openedDate = openedDate
         self.completedDate = completedDate

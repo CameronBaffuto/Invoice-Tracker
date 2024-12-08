@@ -18,6 +18,12 @@ struct InvoiceView: View {
 
     private var sortedItems: [Item] {
         items.sorted { lhs, rhs in
+            let lhsNotCompleted = lhs.completedDate == nil
+            let rhsNotCompleted = rhs.completedDate == nil
+            if lhsNotCompleted != rhsNotCompleted {
+                return lhsNotCompleted
+            }
+
             if lhs.isPaid != rhs.isPaid {
                 return !lhs.isPaid
             }
@@ -35,6 +41,7 @@ struct InvoiceView: View {
             return false
         }
     }
+
 
     var body: some View {
         NavigationSplitView {
