@@ -14,11 +14,13 @@ final class Item {
     var openedDate: Date
     var completedDate: Date?
     var isPaid: Bool
+    var amount: Double
 
-    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false) {
+    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 0.0) {
         self.title = title
         self.openedDate = openedDate
         self.completedDate = completedDate
         self.isPaid = isPaid
+        self.amount = amount
     }
 }

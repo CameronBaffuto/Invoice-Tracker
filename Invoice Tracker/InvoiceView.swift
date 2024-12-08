@@ -14,6 +14,7 @@ struct InvoiceView: View {
     @State private var isAddingItem = false
     @State private var newTitle = ""
     @State private var newDate = Date()
+    @State private var newAmount = 30.0
 
     private var sortedItems: [Item] {
         items.sorted { lhs, rhs in
@@ -60,9 +61,12 @@ struct InvoiceView: View {
                                 }
                             }
                             Spacer()
-                            Text(item.isPaid ? "Paid" : "Unpaid")
-                                .foregroundColor(item.isPaid ? .green : .red)
-                            Spacer()
+                            VStack {
+                                Text(item.isPaid ? "Paid" : "Unpaid")
+                                    .foregroundColor(item.isPaid ? .green : .red)
+                                Text("$\(item.amount, specifier: "%.2f")")
+                                    .font(.footnote)
+                            }
                         }
                     }
                 }
@@ -70,9 +74,9 @@ struct InvoiceView: View {
             }
             .navigationTitle("Invoices")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
+//                ToolbarItem(placement: .navigationBarTrailing) {
+//                    EditButton()
+//                }
                 ToolbarItem {
                     Button(action: { isAddingItem = true }) {
                         Label("Add Item", systemImage: "plus")
@@ -93,6 +97,8 @@ struct InvoiceView: View {
                 Section(header: Text("New Job Details")) {
                     TextField("Title", text: $newTitle)
                     DatePicker("Date", selection: $newDate, displayedComponents: .date)
+                    TextField("Amount", value: $newAmount, formatter: NumberFormatter())
+                        .keyboardType(.decimalPad)
                 }
             }
             .navigationTitle("Add Job")
@@ -114,10 +120,11 @@ struct InvoiceView: View {
 
     private func addItem() {
         withAnimation {
-            let newItem = Item(title: newTitle, openedDate: newDate)
+            let newItem = Item(title: newTitle, openedDate: newDate, amount: newAmount)
             modelContext.insert(newItem)
             newTitle = ""
             newDate = Date()
+            newAmount = 0.0
         }
     }
 

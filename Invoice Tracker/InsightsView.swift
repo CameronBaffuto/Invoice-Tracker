@@ -12,6 +12,36 @@ import SwiftData
 struct InsightsView: View {
     @Query private var items: [Item]
 
+    @State private var showDollarAmounts = false // Toggle state
+
+    private var totalPaidAmount: Double {
+        items.filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
+    }
+
+    private var monthlyPaidData: [(String, Double)] {
+        let paidInvoices = items.filter { $0.isPaid }
+        var groupedByMonth: [String: Double] = [:]
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM yyyy"
+
+        for invoice in paidInvoices {
+            let invoiceDate = invoice.completedDate ?? invoice.openedDate
+            let monthString = dateFormatter.string(from: invoiceDate)
+            groupedByMonth[monthString, default: 0.0] += invoice.amount
+        }
+
+        return groupedByMonth.sorted { lhs, rhs in
+            guard
+                let lhsDate = dateFormatter.date(from: lhs.key),
+                let rhsDate = dateFormatter.date(from: rhs.key)
+            else {
+                return lhs.key > rhs.key
+            }
+            return lhsDate > rhsDate
+        }
+    }
+
     private var totalPaidInvoices: Int {
         items.filter { $0.isPaid }.count
     }
@@ -22,9 +52,6 @@ struct InsightsView: View {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM yyyy"
-
-        let reverseFormatter = DateFormatter()
-        reverseFormatter.dateFormat = "yyyy-MM"
 
         for invoice in paidInvoices {
             let invoiceDate = invoice.completedDate ?? invoice.openedDate
@@ -50,27 +77,56 @@ struct InsightsView: View {
                     HStack {
                         Text("Total Paid Invoices")
                         Spacer()
-                        Text("\(totalPaidInvoices)")
-                            .fontWeight(.bold)
+                        if showDollarAmounts {
+                            Text("$\(totalPaidAmount, specifier: "%.2f")")
+                                .fontWeight(.bold)
+                        } else {
+                            Text("\(totalPaidInvoices)")
+                                .fontWeight(.bold)
+                        }
                     }
                 }
 
-                // Month-by-Month Data
-                Section(header: Text("Month by Month Data")) {
-                    ForEach(monthlyPaidInvoices, id: \.0) { month, count in
-                        HStack {
-                            Text(month)
-                            Spacer()
-                            Text("\(count)")
-                                .fontWeight(.bold)
+                Section(header: Text("Monthly Data")) {
+                    if showDollarAmounts {
+                        ForEach(monthlyPaidData, id: \.0) { month, amount in
+                            HStack {
+                                Text(month)
+                                Spacer()
+                                Text("$\(amount, specifier: "%.2f")")
+                                    .fontWeight(.bold)
+                            }
+                        }
+                    } else {
+                        ForEach(monthlyPaidInvoices, id: \.0) { month, count in
+                            HStack {
+                                Text(month)
+                                Spacer()
+                                Text("\(count)")
+                                    .fontWeight(.bold)
+                            }
                         }
                     }
                 }
             }
             .navigationTitle("Insights")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showDollarAmounts.toggle()
+                    }) {
+                        Image(systemName: showDollarAmounts ? "number.square" : "dollarsign.square")
+                            .font(.title2)
+                            .foregroundColor(.accentColor)
+                    }
+                    .accessibilityLabel("Toggle between dollar amounts and counts")
+                }
+            }
         }
     }
 }
+
+
 
 #Preview {
     let container = try! ModelContainer(for: Item.self)

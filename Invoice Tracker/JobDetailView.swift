@@ -15,6 +15,8 @@ struct JobDetailView: View {
     @State private var openedDate: Date
     @State private var completedDate: Date?
     @State private var isPaid: Bool
+    @State private var amount: Double
+    
     let item: Item
 
     init(item: Item) {
@@ -23,6 +25,7 @@ struct JobDetailView: View {
         _openedDate = State(initialValue: item.openedDate)
         _completedDate = State(initialValue: item.completedDate)
         _isPaid = State(initialValue: item.isPaid)
+        _amount = State(initialValue: item.amount)
     }
 
     var body: some View {
@@ -31,6 +34,8 @@ struct JobDetailView: View {
                 TextField("Title", text: $title)
                 DatePicker("Opened Date", selection: $openedDate, displayedComponents: .date)
                 DatePicker("Completed Date", selection: Binding($completedDate, default: Date()), displayedComponents: .date)
+                TextField("Amount", value: $amount, formatter: NumberFormatter())
+                    .keyboardType(.decimalPad)
                 Toggle("Paid", isOn: $isPaid)
             }
 
@@ -57,6 +62,7 @@ struct JobDetailView: View {
         item.openedDate = openedDate
         item.completedDate = completedDate
         item.isPaid = isPaid
+        item.amount = amount
         try? modelContext.save()
         dismiss()
     }
