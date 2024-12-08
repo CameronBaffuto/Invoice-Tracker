@@ -65,13 +65,3 @@ struct JobDetailView: View {
         Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
     }
 }
-
-#Preview {
-    let container = try! ModelContainer(for: Item.self)
-    let sampleItem = Item(title: "Sample Job", openedDate: Date().addingTimeInterval(-86400 * 7), completedDate: Date(), isPaid: false)
-    container.mainContext.insert(sampleItem)
-
-    return JobDetailView(item: sampleItem)
-        .modelContainer(container)
-}
-

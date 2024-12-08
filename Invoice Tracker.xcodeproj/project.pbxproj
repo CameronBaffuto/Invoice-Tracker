@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E52A63E12D060BCE00BA8051 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A63E02D060BCE00BA8051 /* InsightsView.swift */; };
+		E52A63E52D060CB000BA8051 /* InvoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A63E42D060CA900BA8051 /* InvoiceView.swift */; };
 		E5CDDB282D05369A0033C04E /* Invoice_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CDDB272D05369A0033C04E /* Invoice_TrackerApp.swift */; };
 		E5CDDB2A2D05369A0033C04E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CDDB292D05369A0033C04E /* ContentView.swift */; };
 		E5CDDB2C2D05369A0033C04E /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CDDB2B2D05369A0033C04E /* Item.swift */; };
@@ -17,6 +19,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E52A63E02D060BCE00BA8051 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		E52A63E42D060CA900BA8051 /* InvoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoiceView.swift; sourceTree = "<group>"; };
 		E5CDDB242D05369A0033C04E /* Invoice Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Invoice Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5CDDB272D05369A0033C04E /* Invoice_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Invoice_TrackerApp.swift; sourceTree = "<group>"; };
 		E5CDDB292D05369A0033C04E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -59,6 +63,8 @@
 		E5CDDB262D05369A0033C04E /* Invoice Tracker */ = {
 			isa = PBXGroup;
 			children = (
+				E52A63E42D060CA900BA8051 /* InvoiceView.swift */,
+				E52A63E02D060BCE00BA8051 /* InsightsView.swift */,
 				E5CDDB272D05369A0033C04E /* Invoice_TrackerApp.swift */,
 				E5CDDB292D05369A0033C04E /* ContentView.swift */,
 				E5CDDB2B2D05369A0033C04E /* Item.swift */,
@@ -151,8 +157,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				E5CDDB412D053E770033C04E /* Binding+Extensions.swift in Sources */,
+				E52A63E52D060CB000BA8051 /* InvoiceView.swift in Sources */,
 				E5CDDB2A2D05369A0033C04E /* ContentView.swift in Sources */,
 				E5CDDB2C2D05369A0033C04E /* Item.swift in Sources */,
+				E52A63E12D060BCE00BA8051 /* InsightsView.swift in Sources */,
 				E5CDDB282D05369A0033C04E /* Invoice_TrackerApp.swift in Sources */,
 				E5CDDB3F2D053CFF0033C04E /* JobDetailView.swift in Sources */,
 			);
