@@ -9,7 +9,8 @@ import Foundation
 import SwiftData
 
 @Model
-final class Item {
+final class Item: Identifiable {
+    var id = UUID()
     var title: String
     var openedDate: Date
     var completedDate: Date?

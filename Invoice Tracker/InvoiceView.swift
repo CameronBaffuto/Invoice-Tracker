@@ -81,9 +81,9 @@ struct InvoiceView: View {
             }
             .navigationTitle("Invoices")
             .toolbar {
-//                ToolbarItem(placement: .navigationBarTrailing) {
-//                    EditButton()
-//                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    EditButton()
+                }
                 ToolbarItem {
                     Button(action: { isAddingItem = true }) {
                         Label("Add Item", systemImage: "plus")
@@ -131,14 +131,17 @@ struct InvoiceView: View {
             modelContext.insert(newItem)
             newTitle = ""
             newDate = Date()
-            newAmount = 0.0
+            newAmount = 30.0
         }
     }
 
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            let itemsToDelete = offsets.map { sortedItems[$0] }
+            for item in itemsToDelete {
+                if let originalIndex = items.firstIndex(where: { $0.id == item.id }) {
+                    modelContext.delete(items[originalIndex])
+                }
             }
         }
     }
