@@ -20,14 +20,18 @@ struct ContentView: View {
             if lhs.isPaid != rhs.isPaid {
                 return !lhs.isPaid
             }
-            
-            if (lhs.completedDate == nil) != (rhs.completedDate == nil) {
-                return lhs.completedDate == nil
+
+            if !lhs.isPaid && !rhs.isPaid {
+                return lhs.openedDate < rhs.openedDate
             }
 
-            let lhsDate = lhs.completedDate ?? lhs.openedDate
-            let rhsDate = rhs.completedDate ?? rhs.openedDate
-            return lhsDate > rhsDate
+            if lhs.isPaid && rhs.isPaid {
+                let lhsCompletedDate = lhs.completedDate ?? Date.distantPast
+                let rhsCompletedDate = rhs.completedDate ?? Date.distantPast
+                return lhsCompletedDate > rhsCompletedDate
+            }
+
+            return false
         }
     }
 
