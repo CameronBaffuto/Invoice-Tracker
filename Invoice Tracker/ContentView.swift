@@ -63,6 +63,7 @@ struct ContentView: View {
                 }
                 .onDelete(perform: deleteItems)
             }
+            .navigationTitle("Invoice Tracker")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
