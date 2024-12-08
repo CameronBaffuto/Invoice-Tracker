@@ -12,10 +12,14 @@ import SwiftData
 struct InsightsView: View {
     @Query private var items: [Item]
 
-    @State private var showDollarAmounts = false // Toggle state
+    @State private var showDollarAmounts = false
 
     private var totalPaidAmount: Double {
         items.filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
+    }
+    
+    private var totalUnpaidAmount: Double {
+        items.filter { !$0.isPaid }.reduce(0) { $0 + $1.amount }
     }
 
     private var monthlyPaidData: [(String, Double)] {
@@ -44,6 +48,10 @@ struct InsightsView: View {
 
     private var totalPaidInvoices: Int {
         items.filter { $0.isPaid }.count
+    }
+    
+    private var totalUnpaidInvoices: Int {
+        items.filter { !$0.isPaid }.count
     }
 
     private var monthlyPaidInvoices: [(String, Int)] {
@@ -83,6 +91,17 @@ struct InsightsView: View {
                         } else {
                             Text("\(totalPaidInvoices)")
                                 .fontWeight(.bold)
+                        }
+                    }
+                    HStack {
+                        Text("Total Unpaid Invoices")
+                        Spacer()
+                        if showDollarAmounts {
+                            Text("$\(totalUnpaidAmount, specifier: "%.2f")")
+                                .fontWeight(.bold)
+                        } else {
+                            Text("\(totalUnpaidInvoices)")
+                                    .fontWeight(.bold)
                         }
                     }
                 }
