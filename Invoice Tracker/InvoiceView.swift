@@ -102,7 +102,12 @@ struct InvoiceView: View {
         NavigationView {
             Form {
                 Section(header: Text("New Job Details")) {
-                    TextField("Title", text: $newTitle)
+                    if #available(iOS 18.0, *) {
+                        TextField("Title", text: $newTitle)
+                            .writingToolsBehavior(.complete)
+                    } else {
+                        TextField("Title", text: $newTitle)
+                    }
                     DatePicker("Date", selection: $newDate, displayedComponents: .date)
                     TextField("Amount", value: $newAmount, formatter: NumberFormatter())
                         .keyboardType(.decimalPad)
@@ -148,14 +153,5 @@ struct InvoiceView: View {
 }
 
 #Preview {
-//    let container = try! ModelContainer(for: Item.self)
-//    let sampleItem1 = Item(title: "Unpaid Job", openedDate: Date(), completedDate: nil, isPaid: false)
-//    let sampleItem2 = Item(title: "Paid Job", openedDate: Date().addingTimeInterval(-86400), completedDate: Date().addingTimeInterval(-43200), isPaid: true)
-//    let sampleItem3 = Item(title: "Another Unpaid Job", openedDate: Date(), completedDate: Date(), isPaid: false)
-//    container.mainContext.insert(sampleItem1)
-//    container.mainContext.insert(sampleItem2)
-//    container.mainContext.insert(sampleItem3)
-
     return InvoiceView()
-//        .modelContainer(container)
 }

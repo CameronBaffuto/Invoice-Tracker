@@ -31,7 +31,12 @@ struct JobDetailView: View {
     var body: some View {
         Form {
             Section(header: Text("Job Details")) {
-                TextField("Title", text: $title)
+                if #available(iOS 18.0, *) {
+                    TextField("Title", text: $title)
+                        .writingToolsBehavior(.complete)
+                } else {
+                    TextField("Title", text: $title)
+                }
                 DatePicker("Opened Date", selection: $openedDate, displayedComponents: .date)
                 DatePicker("Completed Date", selection: Binding($completedDate, default: Date()), displayedComponents: .date)
                 TextField("Amount", value: $amount, formatter: NumberFormatter())
