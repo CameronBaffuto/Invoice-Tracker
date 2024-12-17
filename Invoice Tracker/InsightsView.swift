@@ -83,7 +83,7 @@ struct InsightsView: View {
             List {
                 Section(header: Text("All Time")) {
                     HStack {
-                        Text("Total Paid Invoices")
+                        Text("Total Paid")
                         Spacer()
                         if showDollarAmounts {
                             Text("$\(totalPaidAmount, specifier: "%.2f")")
@@ -94,7 +94,7 @@ struct InsightsView: View {
                         }
                     }
                     HStack {
-                        Text("Total Unpaid Invoices")
+                        Text("Total Unpaid")
                         Spacer()
                         if showDollarAmounts {
                             Text("$\(totalUnpaidAmount, specifier: "%.2f")")
@@ -133,6 +133,7 @@ struct InsightsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showDollarAmounts.toggle()
+                        HapticsManager.shared.triggerSelection()
                     }) {
                         Image(systemName: showDollarAmounts ? "number.square" : "dollarsign.square")
                             .font(.title2)

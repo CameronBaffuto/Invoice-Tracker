@@ -36,7 +36,14 @@ struct JobDetailView: View {
                 DatePicker("Completed Date", selection: Binding($completedDate, default: Date()), displayedComponents: .date)
                 TextField("Amount", value: $amount, formatter: NumberFormatter())
                     .keyboardType(.decimalPad)
-                Toggle("Paid", isOn: $isPaid)
+                    Toggle("Paid", isOn: $isPaid)
+                        .onChange(of: isPaid) {_, newValue in
+                                if newValue {
+                                    HapticsManager.shared.triggerImpact(style: .medium)
+                                } else {
+                                    HapticsManager.shared.triggerImpact(style: .light)
+                                }
+                            }
             }
 
             if let completedDate = completedDate {
