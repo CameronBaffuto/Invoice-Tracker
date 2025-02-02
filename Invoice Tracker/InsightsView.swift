@@ -12,7 +12,7 @@ import SwiftData
 struct InsightsView: View {
     @Query private var items: [Item]
 
-    @State private var showDollarAmounts = false
+    @State private var showDollarAmounts = true
 
     private var totalPaidAmount: Double {
         items.filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
