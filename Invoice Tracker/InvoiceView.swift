@@ -14,7 +14,7 @@ struct InvoiceView: View {
     @State private var isAddingItem = false
     @State private var newTitle = ""
     @State private var newDate = Date()
-    @State private var newAmount = 30.0
+    @State private var newAmount = 40.0
 
     private var sortedItems: [Item] {
         items.sorted { lhs, rhs in
@@ -136,7 +136,7 @@ struct InvoiceView: View {
             modelContext.insert(newItem)
             newTitle = ""
             newDate = Date()
-            newAmount = 30.0
+            newAmount = 40.0
         }
     }
 

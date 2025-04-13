@@ -17,6 +17,7 @@ struct JobDetailView: View {
     @State private var isPaid: Bool
     @State private var amount: Double
     @State private var isCompleted: Bool
+    @State private var postedDate: Date?
     
     let item: Item
 
@@ -28,6 +29,7 @@ struct JobDetailView: View {
         _isPaid = State(initialValue: item.isPaid)
         _amount = State(initialValue: item.amount)
         _isCompleted = State(initialValue: item.completedDate != nil)
+        _postedDate = State(initialValue: item.postedDate)
     }
 
     var body: some View {
@@ -66,6 +68,7 @@ struct JobDetailView: View {
                     Text("Opened: \(openedDate, format: .dateTime.year().month().day())")
                     Text("Completed: \(completedDate, format: .dateTime.year().month().day())")
                     Text("Days to Complete: \(daysBetweenDates(openedDate, completedDate))")
+                    DatePicker("Posted Date/Time", selection: Binding($postedDate, default: Date()), displayedComponents: [.date, .hourAndMinute])
                 }
             }
         }
@@ -85,6 +88,7 @@ struct JobDetailView: View {
         item.completedDate = completedDate
         item.isPaid = isPaid
         item.amount = amount
+        item.postedDate = postedDate
         try? modelContext.save()
         dismiss()
     }

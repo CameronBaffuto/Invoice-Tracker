@@ -23,13 +23,13 @@ struct InsightsView: View {
     }
 
     private var monthlyPaidData: [(String, Double)] {
-        let paidInvoices = items.filter { $0.isPaid }
+        let allInvoices = items
         var groupedByMonth: [String: Double] = [:]
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM yyyy"
 
-        for invoice in paidInvoices {
+        for invoice in allInvoices {
             let invoiceDate = invoice.completedDate ?? invoice.openedDate
             let monthString = dateFormatter.string(from: invoiceDate)
             groupedByMonth[monthString, default: 0.0] += invoice.amount
@@ -115,6 +115,14 @@ struct InsightsView: View {
                                 Text("$\(amount, specifier: "%.2f")")
                                     .fontWeight(.bold)
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    exportPDF(for: month)
+                                } label: {
+                                    Label("Export", systemImage: "arrow.down.doc")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     } else {
                         ForEach(monthlyPaidInvoices, id: \.0) { month, count in
@@ -144,6 +152,31 @@ struct InsightsView: View {
             }
         }
     }
+    
+    func exportPDF(for month: String) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM yyyy"
+
+        let filteredJobs = items.filter { item in
+            let date = item.completedDate ?? item.openedDate
+            return dateFormatter.string(from: date) == month
+        }
+
+        let pdfData = PDFGenerator.createMonthlyInvoicePDF(month: month, jobs: filteredJobs)
+        let safeMonth = month.replacingOccurrences(of: " ", with: "")
+        let fileName = "Invoice\(safeMonth).pdf"
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? pdfData.write(to: tempURL)
+
+        let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = scene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
+        }
+    }
+    
 }
 
 

@@ -16,12 +16,14 @@ final class Item: Identifiable {
     var completedDate: Date?
     var isPaid: Bool
     var amount: Double
+    var postedDate: Date?
 
-    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 30.0) {
+    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 40.0, postedDate: Date? = nil) {
         self.title = title
         self.openedDate = openedDate
         self.completedDate = completedDate
         self.isPaid = isPaid
         self.amount = amount
+        self.postedDate = postedDate
     }
 }
