@@ -12,6 +12,7 @@ struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
+    @State private var notes: String
     @State private var openedDate: Date
     @State private var completedDate: Date?
     @State private var isPaid: Bool
@@ -19,11 +20,14 @@ struct JobDetailView: View {
     @State private var isCompleted: Bool
     @State private var postedDate: Date?
     
+    @State private var isShowingEditor = false
+
     let item: Item
 
     init(item: Item) {
         self.item = item
         _title = State(initialValue: item.title)
+        _notes = State(initialValue: item.notes ?? "")
         _openedDate = State(initialValue: item.openedDate)
         _completedDate = State(initialValue: item.completedDate)
         _isPaid = State(initialValue: item.isPaid)
@@ -41,8 +45,9 @@ struct JobDetailView: View {
                 } else {
                     TextField("Title", text: $title)
                 }
+
                 DatePicker("Opened Date", selection: $openedDate, displayedComponents: .date)
-//                DatePicker("Completed Date", selection: Binding($completedDate, default: Date()), displayedComponents: .date)
+
                 Toggle("Completed", isOn: $isCompleted)
                     .onChange(of: isCompleted) { _, newValue in
                         if newValue {
@@ -50,18 +55,53 @@ struct JobDetailView: View {
                         } else {
                             completedDate = nil
                         }
-                }
+                    }
+
                 TextField("Amount", value: $amount, formatter: NumberFormatter())
                     .keyboardType(.decimalPad)
-                    Toggle("Paid", isOn: $isPaid)
-                        .onChange(of: isPaid) {_, newValue in
-                                if newValue {
-                                    HapticsManager.shared.triggerImpact(style: .medium)
-                                } else {
-                                    HapticsManager.shared.triggerImpact(style: .light)
+
+                Toggle("Paid", isOn: $isPaid)
+                    .onChange(of: isPaid) { _, newValue in
+                        if newValue {
+                            HapticsManager.shared.triggerImpact(style: .medium)
+                        } else {
+                            HapticsManager.shared.triggerImpact(style: .light)
+                        }
+                    }
+            }
+
+            Section(header: Text("Notes")) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(notes.isEmpty ? "Tap to add notes..." : notes)
+                            .lineLimit(2)
+                            .foregroundColor(notes.isEmpty ? .gray : .primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                DispatchQueue.main.async {
+                                    isShowingEditor = true
                                 }
                             }
+                    }
+
+                Button(action: {
+                    UIPasteboard.general.string = notes
+                    HapticsManager.shared.triggerImpact(style: .medium)
+                }) {
+                    Image(systemName: "doc.on.doc")
+                        .padding(8)
+                        .background(Color(UIColor.tertiarySystemBackground))
+                        .clipShape(Circle())
+                }
+                .accessibilityLabel("Copy notes")
+                .buttonStyle(.plain)
             }
+        }
+
 
             if let completedDate = completedDate {
                 Section(header: Text("Completion Info")) {
@@ -80,10 +120,14 @@ struct JobDetailView: View {
             }
         }
         .navigationTitle("Edit Job")
+        .sheet(isPresented: $isShowingEditor) {
+            NotesEditorView(notes: $notes)
+        }
     }
 
     private func saveChanges() {
         item.title = title
+        item.notes = notes
         item.openedDate = openedDate
         item.completedDate = completedDate
         item.isPaid = isPaid
@@ -95,5 +139,26 @@ struct JobDetailView: View {
 
     private func daysBetweenDates(_ start: Date, _ end: Date) -> Int {
         Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
+    }
+}
+
+struct NotesEditorView: View {
+    @Binding var notes: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            TextEditor(text: $notes)
+                .padding()
+                .navigationTitle("Edit Notes")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                    }
+                }
+        }
     }
 }

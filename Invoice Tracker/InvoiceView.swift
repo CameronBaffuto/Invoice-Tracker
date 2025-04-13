@@ -13,6 +13,7 @@ struct InvoiceView: View {
     @Query private var items: [Item]
     @State private var isAddingItem = false
     @State private var newTitle = ""
+    @State private var newNote = ""
     @State private var newDate = Date()
     @State private var newAmount = 40.0
 
@@ -108,6 +109,18 @@ struct InvoiceView: View {
                     } else {
                         TextField("Title", text: $newTitle)
                     }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Notes")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        TextEditor(text: $newNote)
+                            .frame(height: 150)
+                            .padding(4)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(8)
+                    }
+
                     DatePicker("Date", selection: $newDate, displayedComponents: .date)
                     TextField("Amount", value: $newAmount, formatter: NumberFormatter())
                         .keyboardType(.decimalPad)
@@ -132,9 +145,10 @@ struct InvoiceView: View {
 
     private func addItem() {
         withAnimation {
-            let newItem = Item(title: newTitle, openedDate: newDate, amount: newAmount)
+            let newItem = Item(title: newTitle, openedDate: newDate, amount: newAmount, notes: newNote)
             modelContext.insert(newItem)
             newTitle = ""
+            newNote = ""
             newDate = Date()
             newAmount = 40.0
         }
