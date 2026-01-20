@@ -58,14 +58,21 @@ struct InvoiceView: View {
                                 Text("Opened: \(item.openedDate, format: .dateTime.year().month().day())")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
-                                if let completedDate = item.completedDate {
-                                    Text("Completed: \(completedDate, format: .dateTime.year().month().day())")
+                                if let postedDate = item.postedDate {
+                                    HStack(spacing: 6) {
+                                        Text("Posted: \(postedDate, format: .dateTime.year().month().day().hour().minute())")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                        if item.completedDate != nil {
+                                            Image(systemName: "checkmark.circle")
+                                                .foregroundColor(.gray)
+                                                .accessibilityLabel("Completed")
+                                        }
+                                    }
+                                } else {
+                                    Text("Posted: Not Set")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
-                                } else {
-                                    Text("Not Completed")
-                                        .font(.subheadline)
-                                        .foregroundColor(.red)
                                 }
                             }
                             Spacer()
@@ -76,6 +83,14 @@ struct InvoiceView: View {
                                     .font(.footnote)
                             }
                         }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            togglePaid(for: item)
+                        } label: {
+                            Label(item.isPaid ? "Mark Unpaid" : "Mark Paid", systemImage: "checkmark.seal")
+                        }
+                        .tint(item.isPaid ? .orange : .green)
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -163,6 +178,10 @@ struct InvoiceView: View {
                 }
             }
         }
+    }
+
+    private func togglePaid(for item: Item) {
+        item.isPaid.toggle()
     }
 }
 

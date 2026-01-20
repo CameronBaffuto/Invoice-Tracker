@@ -14,6 +14,18 @@ struct InsightsView: View {
 
     @State private var showDollarAmounts = true
 
+    private static let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter
+    }()
+
+    private static let yearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        return formatter
+    }()
+
     private var totalPaidAmount: Double {
         items.filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
     }
@@ -23,26 +35,64 @@ struct InsightsView: View {
     }
 
     private var monthlyPaidData: [(String, Double)] {
-        let allInvoices = items
+        let paidInvoices = items.filter { $0.isPaid }
         var groupedByMonth: [String: Double] = [:]
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM yyyy"
 
-        for invoice in allInvoices {
+        for invoice in paidInvoices {
             let invoiceDate = invoice.completedDate ?? invoice.openedDate
-            let monthString = dateFormatter.string(from: invoiceDate)
+            let monthString = Self.monthFormatter.string(from: invoiceDate)
             groupedByMonth[monthString, default: 0.0] += invoice.amount
         }
 
         return groupedByMonth.sorted { lhs, rhs in
             guard
-                let lhsDate = dateFormatter.date(from: lhs.key),
-                let rhsDate = dateFormatter.date(from: rhs.key)
+                let lhsDate = Self.monthFormatter.date(from: lhs.key),
+                let rhsDate = Self.monthFormatter.date(from: rhs.key)
             else {
                 return lhs.key > rhs.key
             }
             return lhsDate > rhsDate
+        }
+    }
+
+    private var monthlyAllData: [(String, Double)] {
+        var groupedByMonth: [String: Double] = [:]
+
+        for invoice in items {
+            let invoiceDate = invoice.completedDate ?? invoice.openedDate
+            let monthString = Self.monthFormatter.string(from: invoiceDate)
+            groupedByMonth[monthString, default: 0.0] += invoice.amount
+        }
+
+        return groupedByMonth.sorted { lhs, rhs in
+            guard
+                let lhsDate = Self.monthFormatter.date(from: lhs.key),
+                let rhsDate = Self.monthFormatter.date(from: rhs.key)
+            else {
+                return lhs.key > rhs.key
+            }
+            return lhsDate > rhsDate
+        }
+    }
+
+    private var yearlyPaidData: [(String, Double)] {
+        let paidInvoices = items.filter { $0.isPaid }
+        var groupedByYear: [String: Double] = [:]
+
+        for invoice in paidInvoices {
+            let invoiceDate = invoice.completedDate ?? invoice.openedDate
+            let yearString = Self.yearFormatter.string(from: invoiceDate)
+            groupedByYear[yearString, default: 0.0] += invoice.amount
+        }
+
+        return groupedByYear.sorted { lhs, rhs in
+            guard
+                let lhsYear = Int(lhs.key),
+                let rhsYear = Int(rhs.key)
+            else {
+                return lhs.key > rhs.key
+            }
+            return lhsYear > rhsYear
         }
     }
 
@@ -57,25 +107,67 @@ struct InsightsView: View {
     private var monthlyPaidInvoices: [(String, Int)] {
         let paidInvoices = items.filter { $0.isPaid }
         var groupedByMonth: [String: Int] = [:]
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM yyyy"
 
         for invoice in paidInvoices {
             let invoiceDate = invoice.completedDate ?? invoice.openedDate
-            let monthString = dateFormatter.string(from: invoiceDate)
+            let monthString = Self.monthFormatter.string(from: invoiceDate)
             groupedByMonth[monthString, default: 0] += 1
         }
 
         return groupedByMonth.sorted { lhs, rhs in
             guard
-                let lhsDate = dateFormatter.date(from: lhs.key),
-                let rhsDate = dateFormatter.date(from: rhs.key)
+                let lhsDate = Self.monthFormatter.date(from: lhs.key),
+                let rhsDate = Self.monthFormatter.date(from: rhs.key)
             else {
                 return lhs.key > rhs.key
             }
             return lhsDate > rhsDate
         }
+    }
+
+    private var monthlyAllInvoices: [(String, Int)] {
+        var groupedByMonth: [String: Int] = [:]
+
+        for invoice in items {
+            let invoiceDate = invoice.completedDate ?? invoice.openedDate
+            let monthString = Self.monthFormatter.string(from: invoiceDate)
+            groupedByMonth[monthString, default: 0] += 1
+        }
+
+        return groupedByMonth.sorted { lhs, rhs in
+            guard
+                let lhsDate = Self.monthFormatter.date(from: lhs.key),
+                let rhsDate = Self.monthFormatter.date(from: rhs.key)
+            else {
+                return lhs.key > rhs.key
+            }
+            return lhsDate > rhsDate
+        }
+    }
+
+    private var yearlyPaidInvoices: [(String, Int)] {
+        let paidInvoices = items.filter { $0.isPaid }
+        var groupedByYear: [String: Int] = [:]
+
+        for invoice in paidInvoices {
+            let invoiceDate = invoice.completedDate ?? invoice.openedDate
+            let yearString = Self.yearFormatter.string(from: invoiceDate)
+            groupedByYear[yearString, default: 0] += 1
+        }
+
+        return groupedByYear.sorted { lhs, rhs in
+            guard
+                let lhsYear = Int(lhs.key),
+                let rhsYear = Int(rhs.key)
+            else {
+                return lhs.key > rhs.key
+            }
+            return lhsYear > rhsYear
+        }
+    }
+
+    private var currentMonthKey: String {
+        Self.monthFormatter.string(from: Date())
     }
 
     var body: some View {
@@ -106,14 +198,42 @@ struct InsightsView: View {
                     }
                 }
 
-                Section(header: Text("Monthly Data")) {
+                Section(header: Text("Paid by Year")) {
                     if showDollarAmounts {
-                        ForEach(monthlyPaidData, id: \.0) { month, amount in
+                        ForEach(yearlyPaidData, id: \.0) { year, amount in
                             HStack {
-                                Text(month)
+                                Text(year)
                                 Spacer()
                                 Text("$\(amount, specifier: "%.2f")")
                                     .fontWeight(.bold)
+                            }
+                        }
+                    } else {
+                        ForEach(yearlyPaidInvoices, id: \.0) { year, count in
+                            HStack {
+                                Text(year)
+                                Spacer()
+                                Text("\(count)")
+                                    .fontWeight(.bold)
+                            }
+                        }
+                    }
+                }
+
+                Section(header: Text("Monthly Data")) {
+                    if showDollarAmounts {
+                        let paidLookup = Dictionary(monthlyPaidData, uniquingKeysWith: { $1 })
+                        let allLookup = Dictionary(monthlyAllData, uniquingKeysWith: { $1 })
+                        ForEach(monthlyAllData, id: \.0) { month, _ in
+                            let isCurrentMonth = month == currentMonthKey
+                            let amount = isCurrentMonth ? (allLookup[month] ?? 0) : (paidLookup[month] ?? 0)
+                            HStack {
+                                Text(month)
+                                    .foregroundColor(isCurrentMonth ? .red : .primary)
+                                Spacer()
+                                Text("$\(amount, specifier: "%.2f")")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(isCurrentMonth ? .red : .primary)
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button {
@@ -125,12 +245,18 @@ struct InsightsView: View {
                             }
                         }
                     } else {
-                        ForEach(monthlyPaidInvoices, id: \.0) { month, count in
+                        let paidLookup = Dictionary(monthlyPaidInvoices, uniquingKeysWith: { $1 })
+                        let allLookup = Dictionary(monthlyAllInvoices, uniquingKeysWith: { $1 })
+                        ForEach(monthlyAllInvoices, id: \.0) { month, _ in
+                            let isCurrentMonth = month == currentMonthKey
+                            let count = isCurrentMonth ? (allLookup[month] ?? 0) : (paidLookup[month] ?? 0)
                             HStack {
                                 Text(month)
+                                    .foregroundColor(isCurrentMonth ? .red : .primary)
                                 Spacer()
                                 Text("\(count)")
                                     .fontWeight(.bold)
+                                    .foregroundColor(isCurrentMonth ? .red : .primary)
                             }
                         }
                     }
@@ -154,12 +280,9 @@ struct InsightsView: View {
     }
     
     func exportPDF(for month: String) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM yyyy"
-
         let filteredJobs = items.filter { item in
             let date = item.completedDate ?? item.openedDate
-            return dateFormatter.string(from: date) == month
+            return Self.monthFormatter.string(from: date) == month
         }
 
         let pdfData = PDFGenerator.createMonthlyInvoicePDF(month: month, jobs: filteredJobs)
@@ -197,4 +320,3 @@ struct InsightsView: View {
     return InsightsView()
         .modelContainer(container)
 }
-
