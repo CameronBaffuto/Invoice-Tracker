@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import PDFKit
 import UIKit
 
 struct PDFGenerator {
@@ -27,7 +26,8 @@ struct PDFGenerator {
             context.beginPage()
             
             if let logoImage = UIImage(named: "Logo") {
-                let logoRect = CGRect(x: pageWidth - 140, y: 20, width: 100, height: 40)
+                let logoBounds = CGRect(x: pageWidth - 120, y: 20, width: 80, height: 80)
+                let logoRect = aspectFitRect(for: logoImage.size, in: logoBounds)
                 logoImage.draw(in: logoRect)
             }
 
@@ -42,19 +42,22 @@ struct PDFGenerator {
 
             yPosition += 40
 
-            // Job rows
-            let _: CGFloat = 24
-
-            let column1X: CGFloat = 40   // Job Title
-            let column2X: CGFloat = 250  // Date
-            let column3X: CGFloat = 450  // Amount
+            let numberColumnX: CGFloat = 40
+            let titleColumnX: CGFloat = 72
+            let dateColumnX: CGFloat = 360
 
             let headerFont = UIFont.boldSystemFont(ofSize: 16)
             let rowFont = UIFont.systemFont(ofSize: 14)
+            let rowParagraphStyle = NSMutableParagraphStyle()
+            rowParagraphStyle.lineBreakMode = .byTruncatingTail
+            let rowAttributes: [NSAttributedString.Key: Any] = [
+                .font: rowFont,
+                .paragraphStyle: rowParagraphStyle
+            ]
 
-            "Job Title".draw(at: CGPoint(x: column1X, y: yPosition), withAttributes: [.font: headerFont])
-            "Posted Date".draw(at: CGPoint(x: column2X, y: yPosition), withAttributes: [.font: headerFont])
-            "Amount".draw(at: CGPoint(x: column3X, y: yPosition), withAttributes: [.font: headerFont])
+            "#".draw(at: CGPoint(x: numberColumnX, y: yPosition), withAttributes: [.font: headerFont])
+            "Item".draw(at: CGPoint(x: titleColumnX, y: yPosition), withAttributes: [.font: headerFont])
+            "Posted Date".draw(at: CGPoint(x: dateColumnX, y: yPosition), withAttributes: [.font: headerFont])
 
             yPosition += 30
 
@@ -62,38 +65,76 @@ struct PDFGenerator {
             dateFormatter.dateStyle = .medium
             dateFormatter.timeStyle = .short
 
-            for job in jobs {
-                let date: Date
+            for (index, job) in jobs.enumerated() {
+                let dateString = postedDateString(for: job, formatter: dateFormatter)
+                let titleRect = CGRect(x: titleColumnX, y: yPosition, width: 260, height: 18)
 
-                if job.completedDate != nil {
-                    date = job.postedDate ?? job.completedDate!
-                } else {
-                    date = job.openedDate
-                }
-
-                let dateString = dateFormatter.string(from: date)
-                let amountString = String(format: "%.2f", job.amount)
-
-                job.title.draw(at: CGPoint(x: column1X, y: yPosition), withAttributes: [.font: rowFont])
-                dateString.draw(at: CGPoint(x: column2X, y: yPosition), withAttributes: [.font: rowFont])
-                "$\(amountString)".draw(at: CGPoint(x: column3X, y: yPosition), withAttributes: [.font: rowFont])
+                "\(index + 1).".draw(at: CGPoint(x: numberColumnX, y: yPosition), withAttributes: rowAttributes)
+                job.title.draw(in: titleRect, withAttributes: rowAttributes)
+                dateString.draw(at: CGPoint(x: dateColumnX, y: yPosition), withAttributes: rowAttributes)
 
                 yPosition += 24
             }
 
             yPosition += 10
             let total = jobs.reduce(0) { $0 + $1.amount }
-            let totalString = String(format: "%.2f", total)
-            let totalLine = "Total: $\(totalString)"
             let totalFont = UIFont.boldSystemFont(ofSize: 18)
             let totalAttributes: [NSAttributedString.Key: Any] = [.font: totalFont]
-            let totalLineWidth = (totalLine as NSString).size(withAttributes: totalAttributes).width
-            let totalX = pageWidth - totalLineWidth - 40
+            let summaryLines = summaryLines(for: jobs, total: total)
 
-            totalLine.draw(at: CGPoint(x: totalX, y: yPosition), withAttributes: totalAttributes)
+            for line in summaryLines {
+                let lineWidth = (line as NSString).size(withAttributes: totalAttributes).width
+                let lineX = pageWidth - lineWidth - 40
+                line.draw(at: CGPoint(x: lineX, y: yPosition), withAttributes: totalAttributes)
+                yPosition += 24
+            }
 
         }
 
         return data
+    }
+
+    private static func summaryLines(for jobs: [Item], total: Double) -> [String] {
+        let totalString = currencyString(for: total)
+
+        guard !jobs.isEmpty else {
+            return ["Total: \(totalString)"]
+        }
+
+        let groupedAmounts = Dictionary(grouping: jobs, by: \.amount)
+            .map { amount, jobs in (amount: amount, count: jobs.count) }
+            .sorted { $0.amount < $1.amount }
+
+        let quantitySummary = groupedAmounts
+            .map { "\($0.count) x \(currencyString(for: $0.amount))" }
+            .joined(separator: " + ")
+
+        return [quantitySummary, "Total: \(totalString)"]
+    }
+
+    private static func currencyString(for amount: Double) -> String {
+        String(format: "$%.2f", amount)
+    }
+
+    private static func postedDateString(for job: Item, formatter: DateFormatter) -> String {
+        guard let postedDate = job.postedDate else {
+            return "Not Set"
+        }
+
+        return formatter.string(from: postedDate)
+    }
+
+    private static func aspectFitRect(for imageSize: CGSize, in bounds: CGRect) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else {
+            return bounds
+        }
+
+        let scale = min(bounds.width / imageSize.width, bounds.height / imageSize.height)
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        let x = bounds.midX - width / 2
+        let y = bounds.midY - height / 2
+
+        return CGRect(x: x, y: y, width: width, height: height)
     }
 }

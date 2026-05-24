@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "Junipra-logo-green 2.png",
+      "filename" : "JunipraHDBerries.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "Junipra-logo-green.png",
+      "filename" : "JunipraHDBerries 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "Junipra-logo-green 1.png",
+      "filename" : "JunipraHDBerries 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
