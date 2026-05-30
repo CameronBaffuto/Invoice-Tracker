@@ -19,6 +19,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Insights", systemImage: "chart.bar")
                 }
+
+            LogoImageProcessorView()
+                .tabItem {
+                    Label("Images", systemImage: "photo.on.rectangle")
+                }
         }
     }
 }
