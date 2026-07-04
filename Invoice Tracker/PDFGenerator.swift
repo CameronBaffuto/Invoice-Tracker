@@ -9,6 +9,119 @@ import Foundation
 import UIKit
 
 struct PDFGenerator {
+    static func createClientPostPDF(for job: Item) -> Data {
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let margin: CGFloat = 40
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+
+        return renderer.pdfData { context in
+            var y: CGFloat = 0
+
+            func beginPage() {
+                context.beginPage()
+                y = margin
+            }
+
+            func drawText(_ text: String, attributes: [NSAttributedString.Key: Any], spacingAfter: CGFloat = 0) {
+                let width = pageRect.width - (margin * 2)
+                let attributedText = NSAttributedString(string: text, attributes: attributes)
+                let fullHeight = ceil(attributedText.boundingRect(
+                    with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                ).height)
+
+                if y + fullHeight > pageRect.height - margin {
+                    beginPage()
+                }
+
+                attributedText.draw(in: CGRect(x: margin, y: y, width: width, height: fullHeight))
+                y += fullHeight + spacingAfter
+            }
+
+            func textHeight(_ text: String, attributes: [NSAttributedString.Key: Any]) -> CGFloat {
+                let attributedText = NSAttributedString(string: text, attributes: attributes)
+                return ceil(attributedText.boundingRect(
+                    with: CGSize(width: pageRect.width - (margin * 2), height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                ).height)
+            }
+
+            func drawPostSection(heading: String, body: String, headingAttributes: [NSAttributedString.Key: Any], bodyAttributes: [NSAttributedString.Key: Any], spacingAfter: CGFloat = 0) {
+                let headingHeight = textHeight(heading, attributes: headingAttributes)
+                let bodyHeight = textHeight(body, attributes: bodyAttributes)
+                let firstBodyLineHeight = (bodyAttributes[.font] as? UIFont)?.lineHeight ?? 12
+                let sectionHeight = headingHeight + 8 + bodyHeight + spacingAfter
+                let usablePageHeight = pageRect.height - (margin * 2)
+
+                // Move a normal-sized section as a unit. For an unusually long
+                // section, keep the heading with at least its first body line.
+                if (sectionHeight <= usablePageHeight && y + sectionHeight > pageRect.height - margin)
+                    || y + headingHeight + 8 + firstBodyLineHeight > pageRect.height - margin {
+                    beginPage()
+                }
+
+                drawText(heading, attributes: headingAttributes, spacingAfter: 8)
+                drawText(body, attributes: bodyAttributes, spacingAfter: spacingAfter)
+            }
+
+            beginPage()
+
+            let headerWidth: CGFloat = 380
+            "GGC Facebook Post".draw(
+                in: CGRect(x: margin, y: y, width: headerWidth, height: 34),
+                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 26)]
+            )
+            y += 40
+            job.title.draw(
+                in: CGRect(x: margin, y: y, width: headerWidth, height: 18),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 12)]
+            )
+            y += 20
+            let documentDate = job.completedDate ?? job.openedDate
+            dateFormatter.string(from: documentDate).draw(
+                at: CGPoint(x: margin, y: y),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 12)]
+            )
+
+            if let data = job.photoData, let image = UIImage(data: data) {
+                let imageBounds = CGRect(x: pageRect.width - margin - 120, y: margin, width: 120, height: 100)
+                image.draw(in: aspectFitRect(for: image.size, in: imageBounds))
+            }
+
+            y = max(y + 42, 164)
+            let headingAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 18),
+                .foregroundColor: UIColor.systemRed
+            ]
+            let bodyStyle = NSMutableParagraphStyle()
+            // Add half a line of leading for 1.5 line spacing.
+            bodyStyle.lineSpacing = UIFont.systemFont(ofSize: 12).lineHeight * 0.5
+            let bodyAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12),
+                .foregroundColor: UIColor.black,
+                .paragraphStyle: bodyStyle
+            ]
+
+            drawPostSection(
+                heading: "Share Post:",
+                body: job.sharePost ?? "",
+                headingAttributes: headingAttributes,
+                bodyAttributes: bodyAttributes,
+                spacingAfter: 24
+            )
+            drawPostSection(
+                heading: "Main Post:",
+                body: job.mainPost ?? "",
+                headingAttributes: headingAttributes,
+                bodyAttributes: bodyAttributes
+            )
+        }
+    }
+
     static func createMonthlyInvoicePDF(month: String, jobs: [Item]) -> Data {
         let pdfMetaData = [
             kCGPDFContextCreator: "Invoice",

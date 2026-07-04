@@ -18,8 +18,14 @@ final class Item: Identifiable {
     var amount: Double
     var postedDate: Date?
     var notes: String?
+    // Optional for migration safety: existing jobs remain nil and do not gain the
+    // client-document workflow. Newly created jobs explicitly set this to true.
+    var clientDocumentEnabled: Bool?
+    var sharePost: String?
+    var mainPost: String?
+    @Attribute(.externalStorage) var photoData: Data?
 
-    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 40.0, postedDate: Date? = nil, notes: String? = nil) {
+    init(title: String, openedDate: Date, completedDate: Date? = nil, isPaid: Bool = false, amount: Double = 40.0, postedDate: Date? = nil, notes: String? = nil, clientDocumentEnabled: Bool? = nil, sharePost: String? = nil, mainPost: String? = nil, photoData: Data? = nil) {
         self.title = title
         self.openedDate = openedDate
         self.completedDate = completedDate
@@ -27,5 +33,9 @@ final class Item: Identifiable {
         self.amount = amount
         self.postedDate = postedDate
         self.notes = notes
+        self.clientDocumentEnabled = clientDocumentEnabled
+        self.sharePost = sharePost
+        self.mainPost = mainPost
+        self.photoData = photoData
     }
 }

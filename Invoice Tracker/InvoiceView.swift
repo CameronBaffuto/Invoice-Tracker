@@ -18,29 +18,30 @@ struct InvoiceView: View {
     @State private var newAmount = 40.0
 
     private var sortedItems: [Item] {
-        items.sorted { lhs, rhs in
-            let lhsNotCompleted = lhs.completedDate == nil
-            let rhsNotCompleted = rhs.completedDate == nil
-            if lhsNotCompleted != rhsNotCompleted {
-                return lhsNotCompleted
+        let incomplete = items
+            .filter { $0.completedDate == nil }
+            .sorted { $0.openedDate < $1.openedDate }
+
+        let completedUnpaid = items
+            .filter { $0.completedDate != nil && !$0.isPaid }
+            .sorted {
+                ($0.completedDate ?? $0.openedDate) < ($1.completedDate ?? $1.openedDate)
             }
 
-            if lhs.isPaid != rhs.isPaid {
-                return !lhs.isPaid
+        let paid = items
+            .filter { $0.isPaid && $0.completedDate != nil }
+            .sorted {
+                ($0.completedDate ?? $0.openedDate) > ($1.completedDate ?? $1.openedDate)
             }
 
-            if !lhs.isPaid && !rhs.isPaid {
-                return lhs.openedDate < rhs.openedDate
-            }
+        let paidButIncomplete = items
+            .filter { $0.isPaid && $0.completedDate == nil }
+            .sorted { $0.openedDate < $1.openedDate }
 
-            if lhs.isPaid && rhs.isPaid {
-                let lhsCompletedDate = lhs.completedDate ?? Date.distantPast
-                let rhsCompletedDate = rhs.completedDate ?? Date.distantPast
-                return lhsCompletedDate > rhsCompletedDate
-            }
-
-            return false
-        }
+        // A paid-but-incomplete job still belongs in the incomplete group. It is
+        // filtered separately only to make the three category rules explicit.
+        let unpaidIncomplete = incomplete.filter { !$0.isPaid }
+        return unpaidIncomplete + paidButIncomplete + completedUnpaid + paid
     }
 
 
@@ -160,7 +161,13 @@ struct InvoiceView: View {
 
     private func addItem() {
         withAnimation {
-            let newItem = Item(title: newTitle, openedDate: newDate, amount: newAmount, notes: newNote)
+            let newItem = Item(
+                title: newTitle,
+                openedDate: newDate,
+                amount: newAmount,
+                notes: newNote,
+                clientDocumentEnabled: true
+            )
             modelContext.insert(newItem)
             newTitle = ""
             newNote = ""
