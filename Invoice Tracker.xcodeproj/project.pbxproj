@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B10000000000000000000002 /* BackupDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* BackupDocument.swift */; };
 		E52A63E12D060BCE00BA8051 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A63E02D060BCE00BA8051 /* InsightsView.swift */; };
 		E52A63E52D060CB000BA8051 /* InvoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A63E42D060CA900BA8051 /* InvoiceView.swift */; };
 		E53E74FC2D8E361E00FC7D9A /* PDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53E74FB2D8E361B00FC7D9A /* PDFGenerator.swift */; };
@@ -23,6 +24,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B10000000000000000000001 /* BackupDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupDocument.swift; sourceTree = "<group>"; };
 		E52A63E02D060BCE00BA8051 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		E52A63E42D060CA900BA8051 /* InvoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoiceView.swift; sourceTree = "<group>"; };
 		E53E74FB2D8E361B00FC7D9A /* PDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFGenerator.swift; sourceTree = "<group>"; };
@@ -71,6 +73,7 @@
 		E5CDDB262D05369A0033C04E /* Invoice Tracker */ = {
 			isa = PBXGroup;
 			children = (
+				B10000000000000000000001 /* BackupDocument.swift */,
 				E53E74FB2D8E361B00FC7D9A /* PDFGenerator.swift */,
 				E5A1FF5A2D11177E0036B4B4 /* HapticsManager.swift */,
 				E581F8003039C10000BA8051 /* LogoImageProcessor.swift */,
@@ -168,6 +171,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B10000000000000000000002 /* BackupDocument.swift in Sources */,
 				E5CDDB412D053E770033C04E /* Binding+Extensions.swift in Sources */,
 				E581F8013039C10000BA8051 /* LogoImageProcessor.swift in Sources */,
 				E52A63E52D060CB000BA8051 /* InvoiceView.swift in Sources */,

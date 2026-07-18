@@ -17,84 +17,62 @@ struct InvoiceView: View {
     @State private var newDate = Date()
     @State private var newAmount = 40.0
 
-    private var sortedItems: [Item] {
-        let incomplete = items
-            .filter { $0.completedDate == nil }
-            .sorted { $0.openedDate < $1.openedDate }
-
-        let completedUnpaid = items
-            .filter { $0.completedDate != nil && !$0.isPaid }
+    private var attentionItems: [Item] {
+        items
+            .filter { !$0.isPaid && effectiveStatus(for: $0) != .sent }
             .sorted {
-                ($0.completedDate ?? $0.openedDate) < ($1.completedDate ?? $1.openedDate)
+                let lhsPriority = effectiveStatus(for: $0) == .draft ? 0 : 1
+                let rhsPriority = effectiveStatus(for: $1) == .draft ? 0 : 1
+                return lhsPriority == rhsPriority
+                    ? $0.openedDate < $1.openedDate
+                    : lhsPriority < rhsPriority
             }
+    }
 
-        let paid = items
-            .filter { $0.isPaid && $0.completedDate != nil }
-            .sorted {
-                ($0.completedDate ?? $0.openedDate) > ($1.completedDate ?? $1.openedDate)
-            }
+    private var awaitingPaymentGroups: [InvoiceMonthGroup] {
+        monthGroups(for: items.filter { !$0.isPaid && effectiveStatus(for: $0) == .sent })
+    }
 
-        let paidButIncomplete = items
-            .filter { $0.isPaid && $0.completedDate == nil }
-            .sorted { $0.openedDate < $1.openedDate }
-
-        // A paid-but-incomplete job still belongs in the incomplete group. It is
-        // filtered separately only to make the three category rules explicit.
-        let unpaidIncomplete = incomplete.filter { !$0.isPaid }
-        return unpaidIncomplete + paidButIncomplete + completedUnpaid + paid
+    private var paidGroups: [InvoiceMonthGroup] {
+        monthGroups(for: items.filter(\.isPaid))
     }
 
 
     var body: some View {
         NavigationSplitView {
             List {
-                ForEach(sortedItems) { item in
-                    NavigationLink {
-                        JobDetailView(item: item)
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(item.title)
-                                    .font(.headline)
-                                Text("Opened: \(item.openedDate, format: .dateTime.year().month().day())")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                if let postedDate = item.postedDate {
-                                    HStack(spacing: 6) {
-                                        Text("Posted: \(postedDate, format: .dateTime.year().month().day().hour().minute())")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                        if item.completedDate != nil {
-                                            Image(systemName: "checkmark.circle")
-                                                .foregroundColor(.gray)
-                                                .accessibilityLabel("Completed")
-                                        }
-                                    }
-                                } else {
-                                    Text("Posted: Not Set")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            Spacer()
-                            VStack {
-                                Text(item.isPaid ? "Paid" : "Unpaid")
-                                    .foregroundColor(item.isPaid ? .green : .red)
-                                Text("$\(item.amount, specifier: "%.2f")")
-                                    .font(.footnote)
-                            }
+                if !attentionItems.isEmpty {
+                    Section("Needs Attention") {
+                        ForEach(attentionItems) { item in
+                            invoiceRow(item)
                         }
-                    }
-                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        Button {
-                            togglePaid(for: item)
-                        } label: {
-                            Label(item.isPaid ? "Mark Unpaid" : "Mark Paid", systemImage: "checkmark.seal")
+                        .onDelete { offsets in
+                            deleteItems(offsets: offsets, from: attentionItems)
                         }
-                        .tint(item.isPaid ? .orange : .green)
                     }
                 }
-                .onDelete(perform: deleteItems)
+
+                ForEach(awaitingPaymentGroups) { group in
+                    Section("Awaiting Payment — \(monthTitle(group.month))") {
+                        ForEach(group.items) { item in
+                            invoiceRow(item)
+                        }
+                        .onDelete { offsets in
+                            deleteItems(offsets: offsets, from: group.items)
+                        }
+                    }
+                }
+
+                ForEach(paidGroups) { group in
+                    Section("Paid — \(monthTitle(group.month))") {
+                        ForEach(group.items) { item in
+                            invoiceRow(item)
+                        }
+                        .onDelete { offsets in
+                            deleteItems(offsets: offsets, from: group.items)
+                        }
+                    }
+                }
             }
             .navigationTitle("Invoices")
             .toolbar {
@@ -112,6 +90,47 @@ struct InvoiceView: View {
         }
         .sheet(isPresented: $isAddingItem) {
             addItemSheet
+        }
+    }
+
+    private func invoiceRow(_ item: Item) -> some View {
+        NavigationLink {
+            JobDetailView(item: item)
+        } label: {
+            HStack {
+                VStack(alignment: .leading) {
+                    HStack(spacing: 6) {
+                        Text(item.title)
+                            .font(.headline)
+                        if item.clientDocumentEnabled == true {
+                            Image(systemName: item.postStatus.systemImage)
+                                .foregroundStyle(postStatusColor(item.postStatus))
+                                .accessibilityLabel(item.postStatus.title)
+                        }
+                    }
+                    Text("Opened: \(item.openedDate, format: .dateTime.year().month().day())")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(item.postedDate.map { "Scheduled: \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "Scheduled: Not Set")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                VStack {
+                    Text(item.isPaid ? "Paid" : "Unpaid")
+                        .foregroundStyle(item.isPaid ? .green : .red)
+                    Text("$\(item.amount, specifier: "%.2f")")
+                        .font(.footnote)
+                }
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            Button {
+                togglePaid(for: item)
+            } label: {
+                Label(item.isPaid ? "Mark Unpaid" : "Mark Paid", systemImage: "checkmark.seal")
+            }
+            .tint(item.isPaid ? .orange : .green)
         }
     }
 
@@ -176,20 +195,62 @@ struct InvoiceView: View {
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
+    private func deleteItems(offsets: IndexSet, from displayedItems: [Item]) {
         withAnimation {
-            let itemsToDelete = offsets.map { sortedItems[$0] }
-            for item in itemsToDelete {
-                if let originalIndex = items.firstIndex(where: { $0.id == item.id }) {
-                    modelContext.delete(items[originalIndex])
-                }
+            for offset in offsets {
+                modelContext.delete(displayedItems[offset])
             }
         }
+    }
+
+    private func effectiveStatus(for item: Item) -> PostStatus {
+        guard item.clientDocumentEnabled == true else {
+            return item.completedDate == nil ? .draft : .sent
+        }
+        return item.postStatus
+    }
+
+    private func monthGroups(for groupedItems: [Item]) -> [InvoiceMonthGroup] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: groupedItems) { item in
+            let date = item.completedDate ?? item.openedDate
+            return calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
+        }
+
+        return grouped
+            .map { month, items in
+                InvoiceMonthGroup(
+                    month: month,
+                    items: items.sorted {
+                        ($0.completedDate ?? $0.openedDate) > ($1.completedDate ?? $1.openedDate)
+                    }
+                )
+            }
+            .sorted { $0.month > $1.month }
+    }
+
+    private func monthTitle(_ month: Date) -> String {
+        month.formatted(.dateTime.month(.wide).year())
     }
 
     private func togglePaid(for item: Item) {
         item.isPaid.toggle()
     }
+
+    private func postStatusColor(_ status: PostStatus) -> Color {
+        switch status {
+        case .draft: .secondary
+        case .readyToPost: .orange
+        case .sent: .green
+        }
+    }
+}
+
+private struct InvoiceMonthGroup: Identifiable {
+    let month: Date
+    let items: [Item]
+
+    var id: Date { month }
 }
 
 #Preview {

@@ -18,6 +18,13 @@ struct LogoImageProcessorView: View {
     @State private var isProcessing = false
     @State private var isSaving = false
     @State private var statusMessage: String?
+    @Environment(\.dismiss) private var dismiss
+
+    let showsDoneButton: Bool
+
+    init(showsDoneButton: Bool = false) {
+        self.showsDoneButton = showsDoneButton
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -46,7 +53,13 @@ struct LogoImageProcessorView: View {
             }
             .navigationTitle("Images")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItemGroup(placement: .topBarLeading) {
+                    if showsDoneButton {
+                        Button("Done") {
+                            dismiss()
+                        }
+                    }
+
                     if !processedImages.isEmpty {
                         Button("Clear", systemImage: "xmark") {
                             processedImages = []
@@ -183,7 +196,7 @@ struct LogoImageProcessorView: View {
     }
 }
 
-private enum PhotoLibrarySaver {
+enum PhotoLibrarySaver {
     static func save(_ images: [UIImage]) async throws {
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         guard status == .authorized || status == .limited else {
