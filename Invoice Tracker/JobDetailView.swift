@@ -13,7 +13,6 @@ import PDFKit
 
 struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
     @AppStorage(AppPreferenceKey.senderEmail) private var senderEmail = ""
     @AppStorage(AppPreferenceKey.recipientEmail) private var recipientEmail = ""
     @State private var title: String
@@ -37,6 +36,8 @@ struct JobDetailView: View {
     @State private var selectedLogoPhotos: [PhotosPickerItem] = []
     @State private var isProcessingLogoPhotos = false
     @State private var imageProcessingMessage: String?
+    @State private var isShowingSaveConfirmation = false
+    @State private var saveConfirmationSequence = 0
     
     @State private var isShowingEditor = false
 
@@ -257,6 +258,17 @@ struct JobDetailView: View {
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
             }
         }
+        .overlay(alignment: .top) {
+            if isShowingSaveConfirmation {
+                Label("Saved", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .onChange(of: selectedLogoPhotos) { _, newPhotos in
             guard !newPhotos.isEmpty else { return }
             Task {
@@ -278,6 +290,9 @@ struct JobDetailView: View {
                     photoError = error.localizedDescription
                 }
             }
+        }
+        .onDisappear {
+            saveChanges(showConfirmation: false)
         }
     }
 
@@ -319,7 +334,7 @@ struct JobDetailView: View {
         }
     }
 
-    private func saveChanges() {
+    private func saveChanges(showConfirmation: Bool = true) {
         item.title = title
         item.notes = notes
         item.openedDate = openedDate
@@ -335,9 +350,27 @@ struct JobDetailView: View {
         }
         do {
             try modelContext.save()
-            dismiss()
+            guard showConfirmation else { return }
+            HapticsManager.shared.triggerImpact(style: .medium)
+            showSaveConfirmation()
         } catch {
             assertionFailure("Unable to save job: \(error)")
+        }
+    }
+
+    private func showSaveConfirmation() {
+        saveConfirmationSequence += 1
+        let sequence = saveConfirmationSequence
+        withAnimation {
+            isShowingSaveConfirmation = true
+        }
+
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard sequence == saveConfirmationSequence else { return }
+            withAnimation {
+                isShowingSaveConfirmation = false
+            }
         }
     }
 
