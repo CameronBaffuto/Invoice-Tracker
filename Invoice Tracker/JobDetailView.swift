@@ -8,10 +8,13 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import MessageUI
 
 struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(AppPreferenceKey.senderEmail) private var senderEmail = ""
+    @AppStorage(AppPreferenceKey.recipientEmail) private var recipientEmail = ""
     @State private var title: String
     @State private var notes: String
     @State private var openedDate: Date
@@ -25,6 +28,7 @@ struct JobDetailView: View {
     @State private var photoData: Data?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var exportedPDF: ExportedPDF?
+    @State private var exportIssue: ExportIssue?
     @State private var photoError: String?
     @State private var isSharePostExpanded = true
     @State private var isMainPostExpanded = true
@@ -142,6 +146,7 @@ struct JobDetailView: View {
                     DisclosureGroup(isExpanded: $isSharePostExpanded) {
                         TextEditor(text: $sharePost)
                             .frame(minHeight: 120)
+                            .padding(.horizontal, -12)
                     } label: {
                         postEditorHeader(title: "Share Post", text: sharePost)
                     }
@@ -149,6 +154,7 @@ struct JobDetailView: View {
                     DisclosureGroup(isExpanded: $isMainPostExpanded) {
                         TextEditor(text: $mainPost)
                             .frame(minHeight: 180)
+                            .padding(.horizontal, -12)
                     } label: {
                         postEditorHeader(title: "Main Post", text: mainPost)
                     }
@@ -168,7 +174,6 @@ struct JobDetailView: View {
                 Section(header: Text("Completion Info")) {
                     Text("Opened: \(openedDate, format: .dateTime.year().month().day())")
                     Text("Completed: \(completedDate, format: .dateTime.year().month().day())")
-                    Text("Days to Complete: \(daysBetweenDates(openedDate, completedDate))")
                     DatePicker("Posted Date/Time", selection: Binding($postedDate, default: Date()), displayedComponents: [.date, .hourAndMinute])
                 }
             }
@@ -185,7 +190,14 @@ struct JobDetailView: View {
             NotesEditorView(notes: $notes)
         }
         .sheet(item: $exportedPDF) { pdf in
-            ActivityView(activityItems: [pdf.url])
+            MailComposeView(export: pdf)
+        }
+        .alert(item: $exportIssue) { issue in
+            Alert(
+                title: Text(issue.title),
+                message: Text(issue.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
         .onChange(of: selectedPhoto) { _, newPhoto in
             guard let newPhoto else { return }
@@ -227,6 +239,13 @@ struct JobDetailView: View {
     }
 
     private func exportClientPDF() {
+        let configuredSender = senderEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let configuredRecipient = recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard configuredSender.contains("@"), configuredRecipient.contains("@") else {
+            exportIssue = .missingEmailSettings
+            return
+        }
+
         item.title = title
         item.completedDate = completedDate
         item.sharePost = sharePost
@@ -248,7 +267,26 @@ struct JobDetailView: View {
 
         do {
             try data.write(to: url, options: .atomic)
-            exportedPDF = ExportedPDF(url: url)
+            guard MFMailComposeViewController.canSendMail() else {
+                exportIssue = .mailUnavailable
+                return
+            }
+
+            let postingDate = postedDate ?? Date()
+            let postingDateFormatter = DateFormatter()
+            postingDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            postingDateFormatter.dateFormat = "MMM d, yyyy"
+            let postingTimeFormatter = DateFormatter()
+            postingTimeFormatter.locale = Locale(identifier: "en_US_POSIX")
+            postingTimeFormatter.dateFormat = "h:mma"
+
+            exportedPDF = ExportedPDF(
+                url: url,
+                senderEmail: configuredSender,
+                recipientEmail: configuredRecipient,
+                subject: "GGC Facebook Post – \(title)",
+                body: "Will be posted \(postingDateFormatter.string(from: postingDate)) at \(postingTimeFormatter.string(from: postingDate).lowercased())"
+            )
         } catch {
             assertionFailure("Unable to write PDF: \(error)")
         }
@@ -285,24 +323,77 @@ struct JobDetailView: View {
         }
     }
 
-    private func daysBetweenDates(_ start: Date, _ end: Date) -> Int {
-        Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
-    }
 }
 
-private struct ActivityView: UIViewControllerRepresentable {
-    let activityItems: [Any]
+private struct MailComposeView: UIViewControllerRepresentable {
+    let export: ExportedPDF
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func makeUIViewController(context: Context) -> MFMailComposeViewController {
+        let composer = MFMailComposeViewController()
+        composer.mailComposeDelegate = context.coordinator
+        composer.setPreferredSendingEmailAddress(export.senderEmail)
+        composer.setToRecipients([export.recipientEmail])
+        composer.setSubject(export.subject)
+        composer.setMessageBody(export.body, isHTML: false)
+
+        if let pdfData = try? Data(contentsOf: export.url) {
+            composer.addAttachmentData(
+                pdfData,
+                mimeType: "application/pdf",
+                fileName: export.url.lastPathComponent
+            )
+        }
+
+        return composer
+    }
+
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
+
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
+        func mailComposeController(
+            _ controller: MFMailComposeViewController,
+            didFinishWith result: MFMailComposeResult,
+            error: Error?
+        ) {
+            controller.dismiss(animated: true)
+        }
+    }
 }
 
 private struct ExportedPDF: Identifiable {
     let id = UUID()
     let url: URL
+    let senderEmail: String
+    let recipientEmail: String
+    let subject: String
+    let body: String
+}
+
+private enum ExportIssue: Identifiable {
+    case missingEmailSettings
+    case mailUnavailable
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .missingEmailSettings: "Email Settings Required"
+        case .mailUnavailable: "Mail Is Not Configured"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .missingEmailSettings:
+            "Enter valid sender and recipient addresses in the Settings tab, then try again."
+        case .mailUnavailable:
+            "Add the sender account to Mail in iOS Settings, then try exporting again."
+        }
+    }
 }
 
 struct NotesEditorView: View {
